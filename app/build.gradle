@@ -2,6 +2,24 @@ apply plugin: 'com.android.application'
 
 ext.abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86":3, "x86_64":4]
 ext.universalBase = 8000
+ext.requiredNativeLibs = [
+    "libavcodec.so",
+    "libavdevice.so",
+    "libavfilter.so",
+    "libavformat.so",
+    "libavutil.so",
+    "libc++_shared.so",
+    "libmpv.so",
+    "libplayer.so",
+    "libswresample.so",
+    "libswscale.so",
+]
+
+def nativeLibDir = { abi -> new File(project.projectDir, "src/main/jniLibs/${abi}") }
+def hasRequiredNativeLibs = { abi ->
+    def dir = nativeLibDir(abi)
+    project.ext.requiredNativeLibs.every { lib -> new File(dir, lib).isFile() }
+}
 
 android {
     namespace 'is.xyz.mpv'
@@ -39,11 +57,32 @@ android {
             reset()
             // include only the ABIs that were actually built
             project.ext.abiCodes.each { abi, _ ->
-                if (new File(project.projectDir, "src/main/jniLibs/${abi}").exists())
+                if (hasRequiredNativeLibs(abi))
                     include(abi)
             }
             universalApk true // build an APK with all ABIs too
         }
+    }
+}
+
+tasks.register("verifyNativeLibs") {
+    def nativeLibSets = project.ext.abiCodes.keySet().collectEntries { abi ->
+        [(abi): project.ext.requiredNativeLibs.collect { lib -> new File(nativeLibDir(abi), lib) }]
+    }
+    doLast {
+        def builtAbis = nativeLibSets.findAll { abi, libs -> libs.every { it.isFile() } }.keySet()
+        if (builtAbis.isEmpty()) {
+            throw new GradleException(
+                "No complete native library set found under app/src/main/jniLibs. " +
+                "Run buildscripts/buildall.sh --arch <arch> mpv-android before assembling APKs."
+            )
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name.startsWith("pre") && task.name.endsWith("Build")) {
+        task.dependsOn("verifyNativeLibs")
     }
 }
 

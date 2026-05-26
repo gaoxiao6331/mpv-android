@@ -14,6 +14,12 @@ else
 fi
 
 unset CC CXX
+
+if [ "$os" == "mac" ] && [ -x /usr/bin/python3 ]; then
+	# Homebrew Python can get ahead of macOS' system expat and break glad XML parsing.
+	export PATH="/usr/bin:$PATH"
+fi
+
 meson setup $build --cross-file "$prefix_dir"/crossfile.txt \
 	-Dvulkan=disabled -Ddemos=false
 

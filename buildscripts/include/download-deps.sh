@@ -8,7 +8,8 @@
 mkdir -p deps && cd deps
 
 # mbedtls
-if [ ! -d mbedtls ]; then
+if [ ! -f mbedtls/Makefile ]; then
+	rm -rf mbedtls
 	mkdir mbedtls
 	$WGET https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$v_mbedtls/mbedtls-$v_mbedtls.tar.bz2 -O - | \
 		tar -xj -C mbedtls --strip-components=1
