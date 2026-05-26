@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/usr/bin/env bash -e
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 . ./include/depinfo.sh
