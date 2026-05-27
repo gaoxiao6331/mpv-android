@@ -5,6 +5,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.view.View;
+import android.widget.ImageView;
 
 import is.xyz.filepicker.FilePickerFragment;
 
@@ -13,6 +14,21 @@ import java.io.File;
 public class MPVFilePickerFragment extends FilePickerFragment {
 
     private File rootPath = new File("/");
+    private VideoThumbnailLoader thumbnailLoader = null;
+
+    @Override
+    public void onBindViewHolder(@NonNull DirViewHolder vh, int position, @NonNull File data) {
+        super.onBindViewHolder(vh, position, data);
+
+        if (thumbnailLoader == null)
+            thumbnailLoader = new VideoThumbnailLoader(requireContext());
+
+        ImageView icon = (ImageView) vh.icon;
+        if (isDir(data))
+            thumbnailLoader.bindDirectoryIcon(icon);
+        else
+            thumbnailLoader.bindFile(icon, data);
+    }
 
     @Override
     public void onClickCheckable(@NonNull View v, @NonNull FileViewHolder vh) {
@@ -53,5 +69,14 @@ public class MPVFilePickerFragment extends FilePickerFragment {
         ActionBar bar = ((AppCompatActivity)getActivity()).getSupportActionBar();
         if (file != null && bar != null)
             bar.setSubtitle(makeRelative(file.getPath()));
+    }
+
+    @Override
+    public void onDestroy() {
+        if (thumbnailLoader != null) {
+            thumbnailLoader.shutdown();
+            thumbnailLoader = null;
+        }
+        super.onDestroy();
     }
 }
